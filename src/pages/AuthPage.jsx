@@ -5,7 +5,7 @@ import Title from "../components/Title";
 import InputField from "../components/InputField";
 import Divider from "../components/Divider";
 import GoogleButton from "../components/GoogleButton";
-import axios from "axios";
+import { register, login } from "../services/auth.service";
 import {
   HiOutlineMail,
   HiOutlineLockClosed,
@@ -17,8 +17,8 @@ export default function AuthPage() {
   const [activeTab, setActiveTab] = useState("Login");
   const [email, setEmail] = useState("");
   const [nome, setNome] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [password, setPassword] = useState("");
+  const [confirmarSenha, setConfirmarSenha] = useState("");
+  const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -26,27 +26,17 @@ export default function AuthPage() {
     setLoading(true);
     setError("");
 
-    if (!nome || !email || !password || password !== confirmPassword) {
-      setError(
-        "Por favor, preencha todos os campos corretamente e certifique-se de que as senhas coincidem."
-      );
-      setLoading(false);
+    if (senha !== confirmarSenha) {
+      setError("As senhas não coincidem.");
       return;
     }
 
     try {
-      const response = await axios.post("http://localhost:3000/api/v1/users", {
-        nomeDeUsuario: email.split("@")[0],
-        email: email,
-        senha: password,
-        nomeCompleto: nome,
-      });
-
-      console.log("Cadastro bem-sucedido:", response.data);
+      await register({ email, senha, nome });
       setActiveTab("Login");
     } catch (error) {
       console.error(
-        "Erro no cadastro:",
+        "Erro no cadastro",
         error.response?.data?.message || error.message
       );
       setError(
@@ -60,19 +50,10 @@ export default function AuthPage() {
   const handleLogin = async () => {
     setLoading(true);
     setError("");
-    try {
-      const response = await axios.post(
-        "http://localhost:3000/api/v1/auth/authenticate",
-        {
-          email: email,
-          password: password,
-        }
-      );
 
-      console.log("Login realizado com sucesso", response.data);
-      const authToken = response.data.token;
-      localStorage.setItem("authToken", authToken);
-      window.location.href = "/dashboard";
+    try {
+      await login({ email, senha });
+      window.location.href = "/welcome";
     } catch (error) {
       console.error(
         "Erro ao fazer login",
@@ -121,8 +102,8 @@ export default function AuthPage() {
                   iconLeft={<HiOutlineLockClosed className="text-gray-400" />}
                   iconRight={<HiOutlineEye className="text-gray-400" />}
                   placeholder="******"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  value={senha}
+                  onChange={(e) => setSenha(e.target.value)}
                 />
 
                 <div className="text-sm text-emerald-600 text-right mb-4 cursor-pointer hover:underline">
@@ -172,8 +153,8 @@ export default function AuthPage() {
                   placeholder="Senha"
                   iconLeft={<HiOutlineLockClosed className="text-gray-400" />}
                   iconRight={<HiOutlineEye className="text-gray-400" />}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  value={senha}
+                  onChange={(e) => setSenha(e.target.value)}
                 />
                 <InputField
                   label="Confirmar Senha"
@@ -181,15 +162,15 @@ export default function AuthPage() {
                   placeholder="Confirmar Senha"
                   iconLeft={<HiOutlineLockClosed className="text-gray-400" />}
                   iconRight={<HiOutlineEye className="text-gray-400" />}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  value={confirmarSenha}
+                  onChange={(e) => setConfirmarSenha(e.target.value)}
                 />
                 <button
                   className="w-full py-2 text-white font-semibold rounded bg-gradient-to-r from-emerald-500 to-purple-500 hover:brightness-110 transition"
                   onClick={handleCadastro}
                   disabled={loading}
                 >
-                  Cadastrar
+                  {loading ? "Cadastrando..." : "Cadastrar"}
                 </button>
                 <Divider />
                 <GoogleButton />
