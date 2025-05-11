@@ -1,9 +1,9 @@
+import AuthPage from "./pages/AuthPage";
+
 function App() {
   return (
     <>
-      <div>
-        <h2>Testes</h2>
-      </div>
+      <AuthPage />;
     </>
   );
 }
