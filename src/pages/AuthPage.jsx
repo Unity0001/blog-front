@@ -5,20 +5,94 @@ import Title from "../components/Title";
 import InputField from "../components/InputField";
 import Divider from "../components/Divider";
 import GoogleButton from "../components/GoogleButton";
+import axios from "axios";
 import {
   HiOutlineMail,
   HiOutlineLockClosed,
   HiOutlineEye,
+  HiOutlineUserCircle,
 } from "react-icons/hi";
 
-const AuthPage = () => {
+export default function AuthPage() {
   const [activeTab, setActiveTab] = useState("Login");
+  const [email, setEmail] = useState("");
+  const [nome, setNome] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleCadastro = async () => {
+    setLoading(true);
+    setError("");
+
+    if (!nome || !email || !password || password !== confirmPassword) {
+      setError(
+        "Por favor, preencha todos os campos corretamente e certifique-se de que as senhas coincidem."
+      );
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await axios.post("http://localhost:3000/api/v1/users", {
+        nomeDeUsuario: email.split("@")[0],
+        email: email,
+        senha: password,
+        nomeCompleto: nome,
+      });
+
+      console.log("Cadastro bem-sucedido:", response.data);
+      setActiveTab("Login");
+    } catch (error) {
+      console.error(
+        "Erro no cadastro:",
+        error.response?.data?.message || error.message
+      );
+      setError(
+        error.response?.data?.message || "Erro ao cadastrar. Tente novamente."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogin = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await axios.post(
+        "http://localhost:3000/api/v1/auth/authenticate",
+        {
+          email: email,
+          password: password,
+        }
+      );
+
+      console.log("Login realizado com sucesso", response.data);
+      const authToken = response.data.token;
+      localStorage.setItem("authToken", authToken);
+      window.location.href = "/dashboard";
+    } catch (error) {
+      console.error(
+        "Erro ao fazer login",
+        error.response?.data?.message || error.message
+      );
+      setError(
+        error.response?.data?.message || "Erro ao fazer login. Tente novamente."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-zinc-600 flex items-center justify-center">
       <div className="container mx-auto px-4">
         <div className="text-center mb-8">
-          <Title extraClassName="text-5xl pb-2 ">Blog do Conhecimento</Title>
+          <Title extraClassName="text-5xl pb-2 bg-gradient-to-r from-emerald-400 to-purple-400  text-transparent bg-clip-text whitespace-nowrap drop-shadow-l">
+            Blog do Conhecimento
+          </Title>
         </div>
         <div className="max-w-md mx-auto">
           <AuthTabs activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -26,7 +100,9 @@ const AuthPage = () => {
           <AuthCard>
             {activeTab === "Login" && (
               <>
-                <Title extraClassName="text-3xl pb-2">Login</Title>
+                <Title extraClassName="text-3xl pb-2 text-emerald-500">
+                  Login
+                </Title>
                 <p className="text-gray-500 text-sm mb-4">
                   Entre com seu email e senha para acessar sua conta.
                 </p>
@@ -36,6 +112,8 @@ const AuthPage = () => {
                   type="email"
                   iconLeft={<HiOutlineMail className="text-gray-400" />}
                   placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
                 <InputField
                   label="Senha"
@@ -43,16 +121,22 @@ const AuthPage = () => {
                   iconLeft={<HiOutlineLockClosed className="text-gray-400" />}
                   iconRight={<HiOutlineEye className="text-gray-400" />}
                   placeholder="******"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
 
                 <div className="text-sm text-emerald-600 text-right mb-4 cursor-pointer hover:underline">
                   Esqueceu a senha?
                 </div>
 
-                <button className="w-full py-2 text-white font-semibold rounded bg-gradient-to-r from-emerald-500 to-purple-500 hover:brightness-110 transition">
-                  Entrar
+                <button
+                  className="w-full py-2 text-white font-semibold rounded bg-gradient-to-r from-emerald-500 to-purple-500 hover:brightness-110 transition"
+                  onClick={handleLogin}
+                  disabled={loading}
+                >
+                  {loading ? "Entrando..." : "Entrar"}
                 </button>
-
+                {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
                 <Divider />
                 <GoogleButton />
               </>
@@ -60,23 +144,27 @@ const AuthPage = () => {
 
             {activeTab === "Cadastro" && (
               <>
-                <Title extraClassName="text-3xl pb-2">Cadastro</Title>
+                <Title extraClassName="text-3xl pb-2 text-purple-500">
+                  Cadastro
+                </Title>
                 <p className="text-gray-500 text-sm mb-4">
                   Crie uma conta para continuar.
                 </p>
-                {/*
                 <InputField
                   label="Nome"
                   type="text"
-                  placeholder="Nome"
+                  placeholder="Nome Completo"
                   iconLeft={<HiOutlineUserCircle className="text-gray-400" />}
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
                 />
-                */}
                 <InputField
                   label="Email"
                   type="email"
                   placeholder="Email"
                   iconLeft={<HiOutlineMail className="text-gray-400" />}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
                 <InputField
                   label="Senha"
@@ -84,6 +172,8 @@ const AuthPage = () => {
                   placeholder="Senha"
                   iconLeft={<HiOutlineLockClosed className="text-gray-400" />}
                   iconRight={<HiOutlineEye className="text-gray-400" />}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
                 <InputField
                   label="Confirmar Senha"
@@ -91,8 +181,14 @@ const AuthPage = () => {
                   placeholder="Confirmar Senha"
                   iconLeft={<HiOutlineLockClosed className="text-gray-400" />}
                   iconRight={<HiOutlineEye className="text-gray-400" />}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                 />
-                <button className="w-full py-2 text-white font-semibold rounded bg-gradient-to-r from-emerald-500 to-purple-500 hover:brightness-110 transition">
+                <button
+                  className="w-full py-2 text-white font-semibold rounded bg-gradient-to-r from-emerald-500 to-purple-500 hover:brightness-110 transition"
+                  onClick={handleCadastro}
+                  disabled={loading}
+                >
                   Cadastrar
                 </button>
                 <Divider />
@@ -101,9 +197,18 @@ const AuthPage = () => {
             )}
           </AuthCard>
         </div>
+        <div className="mt-6 text-center text-sm text-white/80">
+          Ao continuar, você concorda com nossos{" "}
+          <a href="#" className="text-emerald-300 hover:underline">
+            Termos de Serviço
+          </a>{" "}
+          e{" "}
+          <a href="#" className="text-emerald-300 hover:underline">
+            Política de Privacidade
+          </a>
+          .
+        </div>
       </div>
     </div>
   );
-};
-
-export default AuthPage;
+}
